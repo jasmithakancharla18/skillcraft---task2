@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Stopwatch</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: linear-gradient(to bottom right, #cfe8ff, #b3c7f9);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    .card {
+      background: white;
+      padding: 2rem;
+      border-radius: 1rem;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+      text-align: center;
+      width: 100%;
+      max-width: 500px;
+    }
+
+    h1 {
+      font-size: 2rem;
+      margin-bottom: 1rem;
+    }
+
+    .time-display {
+      font-size: 2.5rem;
+      font-family: monospace;
+      margin-bottom: 1.5rem;
+    }
+
+    .buttons {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    button {
+      padding: 0.6rem 1.2rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 0.5rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    .start { background: #4caf50; color: white; }
+    .lap { background: #2196f3; color: white; }
+    .reset { background: #f44336; color: white; }
+
+    ul {
+      max-height: 200px;
+      overflow-y: auto;
+      padding: 0;
+      list-style: none;
+      margin: 0;
+      text-align: left;
+    }
+
+    li {
+      font-family: monospace;
+      padding: 4px 0;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .fastest { color: green; font-weight: bold; }
+    .slowest { color: red; font-weight: bold; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Stopwatch</h1>
+    <div class="time-display" id="display">00:00:00.000</div>
+    <div class="buttons">
+      <button class="start" id="startPause">Start</button>
+      <button class="lap" id="lap" disabled>Lap</button>
+      <button class="reset" id="reset">Reset</button>
+    </div>
+    <ul id="laps"></ul>
+  </div>
+
+  <script>
+    let isRunning = false;
+    let startTime = 0;
+    let elapsed = 0;
+    let timer = null;
+    let laps = [];
+
+    const display = document.getElementById('display');
+    const startBtn = document.getElementById('startPause');
+    const lapBtn = document.getElementById('lap');
+    const resetBtn = document.getElementById('reset');
+    const lapsList = document.getElementById('laps');
+
+    function formatTime(ms) {
+      const msStr = ('00' + (ms % 1000)).slice(-3);
+      const totalSec = Math.floor(ms / 1000);
+      const sec = ('0' + (totalSec % 60)).slice(-2);
+      const min = ('0' + (Math.floor(totalSec / 60) % 60)).slice(-2);
+      const hr = ('0' + Math.floor(totalSec / 3600)).slice(-2);
+      return `${hr}:${min}:${sec}.${msStr}`;
+    }
+
+    function updateDisplay() {
+      const now = Date.now();
+      elapsed = now - startTime;
+      display.textContent = formatTime(elapsed);
+    }
+
+    function startStopwatch() {
+      startTime = Date.now() - elapsed;
+      timer = setInterval(updateDisplay, 10);
+      isRunning = true;
+      startBtn.textContent = 'Pause';
+      lapBtn.disabled = false;
+    }
+
+    function pauseStopwatch() {
+      clearInterval(timer);
+      isRunning = false;
+      startBtn.textContent = 'Start';
+      lapBtn.disabled = true;
+    }
+
+    function resetStopwatch() {
+      clearInterval(timer);
+      isRunning = false;
+      elapsed = 0;
+      laps = [];
+      display.textContent = '00:00:00.000';
+      lapsList.innerHTML = '';
+      startBtn.textContent = 'Start';
+      lapBtn.disabled = true;
+    }
+
+    function recordLap() {
+      laps.push(elapsed);
+      renderLaps();
+    }
+
+    function renderLaps() {
+      lapsList.innerHTML = '';
+
+      if (laps.length === 0) return;
+
+      const diffs = laps.map((lap, i) => i === 0 ? lap : lap - laps[i - 1]);
+      const fastest = Math.min(...diffs);
+      const slowest = Math.max(...diffs);
+
+      diffs.forEach((diff, index) => {
+        const li = document.createElement('li');
+        li.textContent = `Lap ${index + 1}: ${formatTime(diff)}`;
+
+        if (diff === fastest) li.classList.add('fastest');
+        if (diff === slowest) li.classList.add('slowest');
+
+        lapsList.appendChild(li);
+      });
+    }
+
+    startBtn.addEventListener('click', () => {
+      if (isRunning) {
+        pauseStopwatch();
+      } else {
+        startStopwatch();
+      }
+    });
+
+    lapBtn.addEventListener('click', recordLap);
+    resetBtn.addEventListener('click', resetStopwatch);
+  </script>
+</body>
+</html>
